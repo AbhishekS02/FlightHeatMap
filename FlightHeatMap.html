@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+<style>
+table, td,th  {
+  border: 0px solid grey;
+  border-collapse: collapse;
+  padding: 15px;
+}
+</style>
+<body>
+
+<div ng-app="myApp" ng-controller="myCtrl"> 
+
+<select ng-model="selectedCountry">
+<option value="">Select Country</option>
+      <option ng-repeat="x in countryAndStates" value="{{x.Name}}"  >{{x.Name}}</option>
+</select>  
+
+<table style="width=30"">
+<tr>
+<td >
+<ul  ng-repeat="x in countryAndStates | filter: selectedCountry">
+	<ul ng-repeat="y in x.States">
+	<li style="padding:10px;background-color:{{y.Color}}">{{y.Name}} | {{y.TotalNumberOfFlights}}</li>
+		<ul style="height:15px" ng-repeat="z in flightDetails | filter: y.Name"><li>{{z.FlightNumber}}</li></ul>
+	</ul>
+</ul>
+</td>
+</tr>
+</table>
+
+<h2 style="color:red;"> {{errorResponse}}</h2>
+</div>
+<script>
+var app = angular.module('myApp', []);
+app.controller('myCtrl', function($scope, $http,$interval) {
+  
+  $http.get("http://localhost:30265/api/FlightHeatMap/GetCountryAndStates/")
+  .then(function(response) {
+      $scope.countryAndStates = angular.fromJson(response.data);
+	  
+	$scope.errorResponse = "";
+  },(error)=>{
+  $scope.errorResponse = "Unable to load data, Please check Web Api Service is running on localhost";
+  });
+$http.get("http://localhost:30265/api/FlightHeatMap/GetFlightsInArea/")
+  .then(function(response) {
+      $scope.flightDetails = angular.fromJson(response.data);
+	$scope.errorResponse = "";
+  },(error)=>{
+  $scope.errorResponse = "Unable to load data, Please check Web Api Service is running on localhost";
+  });
+
+$interval(()=>{
+
+var promise = $http.get("http://localhost:30265/api/FlightHeatMap/UpdatedFlightsInArea/")
+  .then(function(response) {
+      $scope.flightDetails = angular.fromJson(response.data);
+	$scope.errorResponse = "";
+  },(error)=>{
+  $scope.errorResponse = "Unable to load data, Please check Web Api Service is running on localhost";
+  });
+
+}, 15000);
+  
+  $interval(()=>{
+  $http.get("http://localhost:30265/api/FlightHeatMap/UpdatedCountryAndStates/")
+  .then(function(response) {
+  $scope.countryAndStates = "";
+      $scope.countryAndStates = angular.fromJson(response.data);
+	  
+	$scope.errorResponse = "";
+  },(error)=>{
+  $scope.errorResponse = "Unable to load data, Please check Web Api Service is running on localhost";
+  });
+  },5000);
+  
+});
+</script>
+
+</body>
+</html>
